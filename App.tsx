@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { IconUpload, IconShield, IconArrowRight, IconAlert, IconCheck, IconDocument } from './components/Icons';
 import { LoadingScreen } from './components/LoadingScreen';
 import { DocumentPreview } from './components/DocumentPreview';
+import { BackgroundAnimation } from './components/BackgroundAnimation';
 import { analyzeDocument, generateDisputeLetter } from './services/geminiService';
 import { AppStep, UploadedFile, AnalysisResult } from './types';
 
@@ -17,34 +18,11 @@ function App() {
   const [activeMobileTab, setActiveMobileTab] = useState<'document' | 'analysis'>('analysis');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const resultsContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to top when results appear
   useEffect(() => {
     if (step === AppStep.RESULTS || step === AppStep.LETTER_READY) {
-      const scrollContainer = resultsContainerRef.current;
-      
-      const handleScroll = () => {
-        if (scrollContainer) {
-          scrollContainer.scrollTop = 0;
-        }
-        // Also scroll window for mobile layouts
         window.scrollTo(0, 0);
-      };
-
-      // Attempt 1: Immediate
-      handleScroll();
-
-      // Attempt 2: Next Animation Frame (after paint)
-      const rafId = requestAnimationFrame(handleScroll);
-
-      // Attempt 3: Small delay for any layout shifts/animations
-      const timeoutId = setTimeout(handleScroll, 150);
-      
-      return () => {
-        cancelAnimationFrame(rafId);
-        clearTimeout(timeoutId);
-      };
     }
   }, [step, analysisResult]);
 
@@ -123,11 +101,13 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen flex flex-col font-sans relative">
       
+      <BackgroundAnimation />
+
       {/* Dynamic Header */}
-      <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 z-50 transition-all duration-300">
-        <div className="max-w-7xl mx-auto h-20 flex items-center justify-between px-4 md:px-6">
+      <header className="fixed top-0 w-full bg-white/70 backdrop-blur-md border-b border-slate-200 z-50 transition-all duration-300 h-20">
+        <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-4 md:px-6">
           <div className="group flex items-center gap-3 cursor-pointer" onClick={reset}>
             <div className="relative">
               <div className="absolute inset-0 bg-blue-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
@@ -142,19 +122,19 @@ function App() {
                <span className="h-0.5 w-0 bg-blue-600 mt-1 transition-all duration-500 group-hover:w-full"></span>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
             Gemini 3 Pro Active
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 flex flex-col pt-20 relative overflow-hidden">
+      {/* Main Container - Allows natural window scrolling */}
+      <main className="flex-1 flex flex-col pt-20 relative z-10">
         
         {/* Error Toast */}
         {error && (
-            <div className="absolute top-24 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-slide-up">
+            <div className="fixed top-24 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 bg-red-50/90 backdrop-blur border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-2xl z-[60] flex items-center gap-3 animate-slide-up">
                 <IconAlert className="w-5 h-5 text-red-500 shrink-0" />
                 <span className="font-medium text-sm md:text-base">{error}</span>
                 <button onClick={() => setError(null)} className="ml-auto md:ml-4 text-red-400 hover:text-red-700">✕</button>
@@ -163,7 +143,7 @@ function App() {
 
         {/* STEP: Upload & Context */}
         {step === AppStep.UPLOAD && (
-          <div className="flex-1 overflow-y-auto w-full">
+          <div className="w-full">
             <div className="max-w-5xl mx-auto py-8 md:py-16 px-4 md:px-6">
               
               {/* Hero Text */}
@@ -176,7 +156,7 @@ function App() {
                     </svg>
                   </span>.
                 </h1>
-                <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed px-2">
+                <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed px-2 drop-shadow-sm">
                   Upload any contract, lease, or bill. Our AI finds the predatory clauses and writes the dispute letter for you.
                 </p>
               </div>
@@ -186,10 +166,10 @@ function App() {
                 {/* Upload Zone */}
                 <div 
                     className={`
-                        relative group rounded-2xl border-2 border-dashed p-6 md:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 min-h-[250px]
+                        relative group rounded-2xl border-2 border-dashed p-6 md:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 min-h-[250px] backdrop-blur-sm
                         ${uploadedFile 
-                            ? 'border-green-500 bg-green-50/30' 
-                            : 'border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-1'
+                            ? 'border-green-500 bg-green-50/50' 
+                            : 'border-slate-300 bg-white/50 hover:border-blue-500 hover:bg-blue-50/60 hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-1'
                         }
                     `}
                     onClick={() => fileInputRef.current?.click()}
@@ -229,7 +209,7 @@ function App() {
                 </div>
 
                 {/* Context Input */}
-                <div className="flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden group">
+                <div className="flex flex-col bg-white/80 backdrop-blur rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden group">
                   <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -238,7 +218,7 @@ function App() {
                   </div>
                   <div className="flex-1 p-0 relative">
                       <textarea 
-                        className="w-full h-full min-h-[200px] p-6 text-slate-700 focus:outline-none focus:bg-blue-50/10 resize-none transition-colors text-base leading-relaxed placeholder:text-slate-300"
+                        className="w-full h-full min-h-[200px] p-6 text-slate-700 bg-transparent focus:outline-none focus:bg-blue-50/20 resize-none transition-colors text-base leading-relaxed placeholder:text-slate-300"
                         placeholder="Tell us what's happening. E.g., 'My landlord is keeping my deposit...'"
                         value={userContext}
                         onChange={(e) => setUserContext(e.target.value)}
@@ -277,20 +257,21 @@ function App() {
 
         {/* STEP: Processing */}
         {(step === AppStep.ANALYZING || step === AppStep.GENERATING_LETTER) && (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white">
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-white/60 backdrop-blur min-h-[calc(100vh-5rem)]">
                 <LoadingScreen type={step === AppStep.ANALYZING ? 'scan' : 'letter'} />
             </div>
         )}
 
         {/* STEP: Results Dashboard */}
         {(step === AppStep.RESULTS || step === AppStep.LETTER_READY) && analysisResult && uploadedFile && (
-          <div className="flex flex-col lg:flex-row flex-1 h-full overflow-hidden animate-fade-in relative">
+          <div className="flex flex-col lg:flex-row flex-1 relative">
             
-            {/* Split Screen - Left: Document */}
+            {/* Split Screen - Left: Document (Sticky on Desktop) */}
             <div className={`
-                bg-slate-100 p-4 md:p-8 border-r border-slate-200 flex-col relative
+                bg-slate-100/95 backdrop-blur p-4 md:p-8 border-r border-slate-200 flex-col relative
                 lg:flex lg:w-1/2 
-                ${activeMobileTab === 'document' ? 'flex w-full h-full' : 'hidden'}
+                lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)]
+                ${activeMobileTab === 'document' ? 'flex w-full h-[calc(100vh-5rem)]' : 'hidden'} 
             `}>
                 <div className="absolute top-4 left-4 md:left-8 z-10">
                      <button onClick={() => setStep(AppStep.UPLOAD)} className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-colors bg-white/50 p-1.5 rounded backdrop-blur">
@@ -302,15 +283,15 @@ function App() {
                 </div>
             </div>
 
-            {/* Split Screen - Right: Reasoning & Action */}
+            {/* Split Screen - Right: Reasoning & Action (Scrolls with Window) */}
             <div className={`
-                flex-col bg-white overflow-hidden relative
+                flex-col bg-white/95 backdrop-blur relative
                 lg:flex lg:w-1/2 w-full
-                ${activeMobileTab === 'analysis' ? 'flex h-full' : 'hidden'}
+                ${activeMobileTab === 'analysis' ? 'flex' : 'hidden'}
             `}>
                 
-                {/* Results Header */}
-                <div className="px-4 md:px-8 py-4 md:py-6 border-b border-slate-100 bg-white/95 backdrop-blur z-20 sticky top-0 flex justify-between items-end">
+                {/* Results Header - Sticky within the right column context */}
+                <div className="px-4 md:px-8 py-4 md:py-6 border-b border-slate-100 bg-white/95 backdrop-blur z-20 sticky top-20 flex justify-between items-end">
                     <div>
                         <h2 className="text-xl md:text-2xl font-serif font-bold text-slate-900">Analysis Report</h2>
                         <div className="flex items-center gap-4 mt-2">
@@ -342,11 +323,8 @@ function App() {
                     )}
                 </div>
 
-                {/* Content Container */}
-                <div 
-                    ref={resultsContainerRef} 
-                    className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 pb-32"
-                >
+                {/* Content Container - Natural Window Scroll */}
+                <div className="p-4 md:p-8 space-y-6 md:space-y-8 pb-32">
                     
                     {step === AppStep.RESULTS ? (
                         <div className="animate-slide-up">
@@ -419,8 +397,8 @@ function App() {
                     )}
                 </div>
 
-                {/* Floating Action Bar */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none z-30">
+                {/* Floating Action Bar - Fixed Bottom */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none z-30 lg:left-1/2 lg:w-1/2">
                      <div className="pointer-events-auto flex justify-center">
                         {step === AppStep.RESULTS ? (
                             <button 
@@ -434,7 +412,6 @@ function App() {
                             </button>
                         ) : (
                             <div className="flex gap-4 w-full max-w-lg pb-14 lg:pb-0"> 
-                                {/* Added pb-14 on mobile to avoid overlap with tab switcher if present, though tab switcher is usually only for view switching */}
                                 <button 
                                     className="flex-1 bg-blue-600 text-white py-3 md:py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-blue-500/30 text-sm md:text-base"
                                     onClick={() => {
@@ -451,8 +428,8 @@ function App() {
 
             </div>
 
-            {/* Mobile Tab Switcher */}
-            <div className="lg:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900/90 backdrop-blur p-1 rounded-full shadow-2xl border border-slate-700/50">
+            {/* Mobile Tab Switcher - Fixed above footer */}
+            <div className="lg:hidden fixed bottom-28 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-slate-900/90 backdrop-blur p-1 rounded-full shadow-2xl border border-slate-700/50">
                 <button
                     onClick={() => setActiveMobileTab('analysis')}
                     className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeMobileTab === 'analysis' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-white'}`}
